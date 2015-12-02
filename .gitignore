@@ -6,3 +6,6 @@ ArmorStand.iml
 
 *.project
 .classpath
+/target/
+.jar
+.bat
