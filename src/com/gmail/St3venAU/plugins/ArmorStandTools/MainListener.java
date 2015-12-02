@@ -1,5 +1,10 @@
 package com.gmail.St3venAU.plugins.ArmorStandTools;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+import java.util.regex.Pattern;
+
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -12,6 +17,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -21,12 +27,14 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCreativeEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
@@ -34,11 +42,6 @@ import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.scheduler.BukkitRunnable;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-import java.util.regex.Pattern;
 
 public class MainListener implements Listener {
 
@@ -49,7 +52,6 @@ public class MainListener implements Listener {
         this.plugin = main;
     }
 
-    @SuppressWarnings("ConstantConditions")
     @EventHandler
     public void onPlayerInteractAtEntity(PlayerInteractAtEntityEvent event) {
         if (event.getRightClicked() instanceof ArmorStand) {
@@ -64,6 +66,16 @@ public class MainListener implements Listener {
                     p.sendMessage(ChatColor.RED + Config.wgNoPerm);
                 }
             }
+            
+            // must be in tool mode for any of the following to occur:
+        	if(!plugin.savedInventories.containsKey(event.getPlayer().getUniqueId()))
+        		return;
+        	
+            if(p.getItemInHand().getType().equals(Material.STAINED_GLASS_PANE)) {
+            	event.setCancelled(true);
+            	return;
+            }
+            
             ArmorStandTool tool = ArmorStandTool.get(p.getItemInHand());
             if(tool == null) return;
             ArmorStand as = (ArmorStand) event.getRightClicked();
@@ -161,24 +173,22 @@ public class MainListener implements Listener {
         }
     }
 
-    @SuppressWarnings("deprecation")
     @EventHandler
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
-        if (event.getRightClicked() instanceof ItemFrame && ArmorStandTool.isTool(event.getPlayer().getItemInHand())) {
-            event.setCancelled(true);
-            event.getPlayer().updateInventory();
+        if (event.getRightClicked() instanceof ItemFrame) {
+        	// player can not place any item in tools mode (e.g. glass).
+        	if(plugin.savedInventories.containsKey(event.getPlayer().getUniqueId()))
+        		event.setCancelled(true);
         }
     }
 
-    @SuppressWarnings("deprecation")
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
-        if (ArmorStandTool.isTool(event.getItemInHand())) {
-            event.setCancelled(true);
-        }
+    	// player can not place any block in tools mode (e.g. glass).
+    	if(plugin.savedInventories.containsKey(event.getPlayer().getUniqueId()))
+    		event.setCancelled(true);
     }
 
-    @SuppressWarnings("deprecation")
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Player p = event.getPlayer();
@@ -223,7 +233,7 @@ public class MainListener implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority=EventPriority.HIGH) // high priority to ensure it works with plug-ins like factions.
     public void onPlayerDeath(PlayerDeathEvent event) {
         final Player p = event.getEntity();
         if(p.getWorld().getGameRuleValue("keepInventory").equalsIgnoreCase("true")) return;
@@ -238,10 +248,11 @@ public class MainListener implements Listener {
     }
 
     @SuppressWarnings("deprecation")
-    @EventHandler
+	@EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (event.isCancelled() || !(event.getWhoClicked() instanceof Player)) return;
         final Player p = (Player) event.getWhoClicked();
+        
         ItemStack item = event.getCurrentItem();
         if(event.getInventory().getHolder() != p && ArmorStandTool.isTool(item)) {
             event.setCancelled(true);
@@ -255,23 +266,40 @@ public class MainListener implements Listener {
             }
         }
     }
-
+    
     @SuppressWarnings("deprecation")
-    @EventHandler
+	@EventHandler
     public void onInventoryDrag(InventoryDragEvent event) {
         if (event.isCancelled() || !(event.getWhoClicked() instanceof Player)) return;
         final Player p = (Player) event.getWhoClicked();
-        if (event.getInventory().getHolder() != p && Utils.containsItems(event.getNewItems().values())) {
-            event.setCancelled(true);
-            p.updateInventory();
-        }
+        
+    	// block inventory changes done in any mode.
+        // don't want players overwriting tools with middle mouse clicks and such.
+    	if(plugin.savedInventories.containsKey(p.getUniqueId())) {
+    		event.setCancelled(true);
+    		p.updateInventory();
+    	}
     }
 
     @EventHandler
     public void onPlayerDropItem(final PlayerDropItemEvent event) {
-        if (ArmorStandTool.isTool(event.getItemDrop().getItemStack())) {
-            event.getItemDrop().remove();
-        }
+    	// player can not throw away any tools.
+    	if(plugin.savedInventories.containsKey(event.getPlayer().getUniqueId()))
+    		event.setCancelled(true);
+    }
+    
+    @EventHandler
+    public void onPlayerPickupItem(final PlayerPickupItemEvent event) {
+    	// player can not pick up any items in tools mode.
+    	if(plugin.savedInventories.containsKey(event.getPlayer().getUniqueId()))
+    		event.setCancelled(true);
+    }
+    
+    @EventHandler
+    public void onInventoryCreative(final InventoryCreativeEvent event) {
+    	// block inventory changes done by creative mode.
+    	if(plugin.savedInventories.containsKey(event.getViewers().get(0).getUniqueId()))
+    		event.setCancelled(true);
     }
 
     @EventHandler
@@ -302,8 +330,13 @@ public class MainListener implements Listener {
             }
             return;
         }
+        
+        // must be in tool mode for any of the following to occur:
+    	if(!plugin.savedInventories.containsKey(event.getPlayer().getUniqueId()))
+    		return;
+        
         ArmorStandTool tool = ArmorStandTool.get(event.getItem());
-        if(tool == null) return;
+        if(tool == null && !event.getItem().getType().equals(Material.STAINED_GLASS_PANE)) return;
         event.setCancelled(true);
         Action action = event.getAction();
         if(action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
@@ -327,7 +360,7 @@ public class MainListener implements Listener {
 
     @EventHandler
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-        if(event.getEntity() instanceof ArmorStand && event.getDamager() instanceof Player && ArmorStandTool.isTool(((Player) event.getDamager()).getItemInHand())) {
+        if(event.getEntity() instanceof ArmorStand && event.getDamager() instanceof Player && plugin.savedInventories.containsKey(((Player)event.getDamager()).getUniqueId())) {
             event.setCancelled(true);
             if(noCooldown(event.getDamager())) {
                 Utils.cycleInventory((Player) event.getDamager());

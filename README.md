@@ -1,7 +1,18 @@
 # ArmorStandTools
 A full suite of Armor Stand tools for CraftBukkit/Spigot
 
+This is a fork of this original project: https://github.com/St3venAU/ArmorStandTools
 Spigot resource page with plugin download: http://www.spigotmc.org/resources/armor-stand-tools.2237/
+
+This forked version
+-----------
+The improvement patch for PvP, Survival and Creative servers as well as third party plug-ins.
+Higher priority death handler to clean up the inventory before other plug-ins like factions (combat tag) and such access the inventory.
+Player can not throw away any tools.
+Player can not pick up any items in tools mode.
+Fills up the inventory with glass so that third party plug-ins will see the inventory is full.
+Use this fork if you feel the original is abusable or not working as expected.
+Visit us on http://choicecraft.net/
 
 Inspiration
 -----------

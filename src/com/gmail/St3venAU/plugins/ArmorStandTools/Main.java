@@ -73,7 +73,7 @@ public class Main extends JavaPlugin {
         as.setMetadata("startLoc", new FixedMetadataValue(this, as.getLocation()));
     }
 
-    @SuppressWarnings({"deprecation", "ConstantConditions"})
+    @SuppressWarnings({"deprecation"})
     void generateCmdBlock(Location l, ArmorStand as) {
         Location loc = as.getLocation();
         int dSlots = NBT.getDisabledSlots(as);

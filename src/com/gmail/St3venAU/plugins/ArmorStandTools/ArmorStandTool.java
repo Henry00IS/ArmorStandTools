@@ -105,8 +105,10 @@ public enum ArmorStandTool {
 
     static void give(Player p) {
         PlayerInventory i = p.getInventory();
+        // fill up the inventory with glass so that third party plug-ins will see the inventory is full.
+        ItemStack filler = new ItemStack(Material.STAINED_GLASS_PANE, 1, (short) 15);
         for(int slot = 0; slot < 36; slot++) {
-            i.setItem(slot, null);
+            i.setItem(slot, filler);
         }
         for(ArmorStandTool t : values()) {
             if(t.enabled && !t.forGui) {
