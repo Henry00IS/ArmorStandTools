@@ -3,7 +3,7 @@ name: ArmorStandTools
 version: 2.06
 author: St3venAU
 description: Armor stand manipulation tools
-softdepend: [WorldGuard, PlotSquared]
+softdepend: [WorldGuard,PlotSquared,Factions]
 commands:
    astools:
       description: Give yourself the armor stand tools

@@ -76,6 +76,9 @@ public class MainListener implements Listener {
             	return;
             }
             
+            // in case a different plug-in cancels this event.
+            if(event.isCancelled()) return;
+            
             ArmorStandTool tool = ArmorStandTool.get(p.getItemInHand());
             if(tool == null) return;
             ArmorStand as = (ArmorStand) event.getRightClicked();
